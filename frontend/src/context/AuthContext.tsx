@@ -8,7 +8,16 @@ import React, {
 import axios from "axios";
 
 const API_URL = "https://secure-document-vault-a7jq.onrender.com";
-fetch(`${API_URL}/api/v1/auth/register`);
+fetch(`${API_URL}/api/v1/auth/register`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    email,
+    password,
+  }),
+});
 
 interface User {
   id: string;
