@@ -15,8 +15,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-
-const API_URL = "http://localhost:8000/api/v1";
+import { API_BASE_URL } from "../config.ts";
 
 interface Document {
   id: string;
@@ -57,7 +56,7 @@ export default function DashboardPage() {
 
       try {
         const token = getToken();
-        const response = await axios.get(`${API_URL}/documents/`, {
+        const response = await axios.get(`${API_BASE_URL}/documents/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -87,7 +86,7 @@ export default function DashboardPage() {
   const loadDocuments = async () => {
     try {
       const token = getToken();
-      const response = await axios.get(`${API_URL}/documents/`, {
+      const response = await axios.get(`${API_BASE_URL}/documents/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setDocuments(response.data);
@@ -138,7 +137,7 @@ export default function DashboardPage() {
       formData.append("file", selectedFile);
 
       const token = getToken();
-      await axios.post(`${API_URL}/documents/upload`, formData, {
+      await axios.post(`${API_BASE_URL}/documents/upload`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
@@ -161,7 +160,7 @@ export default function DashboardPage() {
 
     try {
       const token = getToken();
-      await axios.delete(`${API_URL}/documents/${docId}`, {
+      await axios.delete(`${API_BASE_URL}/documents/${docId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       addToast("Document deleted successfully", "success");
@@ -175,7 +174,7 @@ export default function DashboardPage() {
     try {
       const token = getToken();
       const response = await axios.post(
-        `${API_URL}/documents/download/request/${docId}`,
+        `${API_BASE_URL}/documents/download/request/${docId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -199,7 +198,7 @@ export default function DashboardPage() {
     try {
       const token = getToken();
       const response = await axios.post(
-        `${API_URL}/documents/download/verify/${docId}`,
+        `${API_BASE_URL}/documents/download/verify/${docId}`,
         { otp_code: otp },
         {
           headers: { Authorization: `Bearer ${token}` },

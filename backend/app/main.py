@@ -83,13 +83,21 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    @app.get("/", summary="API Root")
+    def api_root():
+        return {
+            "message": f"{settings.APP_NAME} API is running.",
+            "health": "/health",
+            "docs": "/docs",
+        }
+
     # ── Middleware ────────────────────────────────────────────
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"] if settings.DEBUG else [],
+        allow_origins=["*"] if settings.DEBUG else settings.frontend_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

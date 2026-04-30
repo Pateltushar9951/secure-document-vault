@@ -1,4 +1,4 @@
-import React, {
+import {
   createContext,
   useContext,
   useState,
@@ -6,18 +6,7 @@ import React, {
   ReactNode,
 } from "react";
 import axios from "axios";
-
-const API_URL = "https://secure-document-vault-a7jq.onrender.com";
-fetch(`${API_URL}/api/v1/auth/register`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    email,
-    password,
-  }),
-});
+import { API_BASE_URL } from "../config.ts";
 
 interface User {
   id: string;
@@ -73,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyToken = async (token: string) => {
     try {
-      const response = await axios.get(`${API_URL}/auth/me`, {
+      const response = await axios.get(`${API_BASE_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUser(response.data);
@@ -86,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string) => {
-    const response = await axios.post(`${API_URL}/auth/login`, {
+    const response = await axios.post(`${API_BASE_URL}/auth/login`, {
       email,
       password,
     });
@@ -96,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (email: string, password: string) => {
     const response = await axios.post<RegistrationResponse>(
-      `${API_URL}/auth/register`,
+      `${API_BASE_URL}/auth/register`,
       {
         email,
         password,
@@ -107,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyEmail = async (email: string, otpCode: string) => {
     const response = await axios.post<VerificationResponse>(
-      `${API_URL}/auth/verify-email`,
+      `${API_BASE_URL}/auth/verify-email`,
       {
         email,
         otp_code: otpCode,
@@ -118,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resendVerification = async (email: string) => {
     const response = await axios.post<RegistrationResponse>(
-      `${API_URL}/auth/resend-verification`,
+      `${API_BASE_URL}/auth/resend-verification`,
       {
         email,
       },

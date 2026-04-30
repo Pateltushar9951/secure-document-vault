@@ -11,3 +11,4 @@ slowapi==0.1.9
 aiofiles==23.2.1
 email-validator==2.1.1
 pymongo==4.6.1
+gunicorn==20.1.0

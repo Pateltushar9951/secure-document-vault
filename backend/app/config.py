@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # ── Frontend Origins ──────────────────────────────────────
+    FRONTEND_ORIGINS: str = (
+        "http://localhost:5173,"
+        "http://127.0.0.1:5173,"
+        "https://secure-document-vault-woad.vercel.app"
+    )
+
     # ── Database (MongoDB Atlas) ──────────────────────────────
     MONGODB_URI: str = "mongodb+srv://pateltushar9951_db_user:Uz4fSnM99yr6eVK9@cluster.mongodb.net/secure_vault?retryWrites=true&w=majority"
     MONGODB_DB_NAME: str = "secure_vault"
@@ -52,6 +59,14 @@ class Settings(BaseSettings):
     @property
     def allowed_mime_list(self) -> list[str]:
         return [m.strip() for m in self.ALLOWED_MIME_TYPES.split(",")]
+
+    @property
+    def frontend_origins(self) -> list[str]:
+        return [
+            origin.strip()
+            for origin in self.FRONTEND_ORIGINS.split(",")
+            if origin.strip()
+        ]
 
     @property
     def max_file_bytes(self) -> int:
