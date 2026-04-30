@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import axios from "axios";
 
-const API_URL = "http://localhost:8000/api/v1";
+const API_URL = "https://secure-document-vault-a7jq.onrender.com/api/v1/api/v1";
 
 interface User {
   id: string;
