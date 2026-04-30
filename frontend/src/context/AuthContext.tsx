@@ -6,7 +6,7 @@ import {
   ReactNode,
 } from "react";
 import axios from "axios";
-import { API_BASE_URL } from "../config.ts";
+import { API_BASE_URL } from "../config";
 
 interface User {
   id: string;
