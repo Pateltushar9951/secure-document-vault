@@ -52,7 +52,7 @@ _HTML_TEMPLATE = """\
 <body>
   <div class="card">
     <h2>🔐 Secure Document Vault</h2>
-    <p>You requested to download <strong>{filename}</strong>.</p>
+    <p>You requested to {action} <strong>{filename}</strong>.</p>
     <p>Use the following One-Time Password to complete the download:</p>
     <div class="otp">{otp}</div>
     <p>This OTP expires in <strong>{expire_minutes} minutes</strong>
@@ -115,6 +115,7 @@ def send_otp_email(
     recipient_email: str,
     otp_code: str,
     filename: str,
+  action: str = "download",
 ) -> bool:
     """
     Send the OTP to the user via SMTP.
@@ -139,14 +140,16 @@ def send_otp_email(
         )
         return False
 
-    subject = "Your Secure Document Vault OTP"
+    action_label = action.strip().lower() or "download"
+    subject = f"Your Secure Document Vault OTP for {action_label}"
     html_body = _HTML_TEMPLATE.format(
+      action=action_label,
         filename=filename,
         otp=otp_code,
         expire_minutes=settings.OTP_EXPIRE_MINUTES,
     )
     plain_body = (
-        f"Your OTP for '{filename}' is: {otp_code}\n"
+      f"Your OTP to {action_label} '{filename}' is: {otp_code}\n"
         f"It expires in {settings.OTP_EXPIRE_MINUTES} minutes."
     )
 

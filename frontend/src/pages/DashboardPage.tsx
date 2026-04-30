@@ -41,6 +41,8 @@ export default function DashboardPage() {
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpInput, setOtpInput] = useState("");
   const [pendingDocId, setPendingDocId] = useState<string>("");
+  const [pendingDocName, setPendingDocName] = useState<string>("");
+  const [otpAction, setOtpAction] = useState<"download" | "delete">("download");
   const [showOtpPassword, setShowOtpPassword] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -154,23 +156,39 @@ export default function DashboardPage() {
     }
   };
 
+  const resetOtpModal = () => {
+    setShowOtpModal(false);
+    setOtpInput("");
+    setPendingDocId("");
+    setPendingDocName("");
+    setOtpAction("download");
+    setShowOtpPassword(false);
+  };
+
   const handleDelete = async (docId: string, docName: string) => {
     if (!window.confirm(`Delete "${docName}"? This action cannot be undone.`))
       return;
 
     try {
       const token = getToken();
-      await axios.delete(`${API_BASE_URL}/documents/${docId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      addToast("Document deleted successfully", "success");
-      await loadDocuments();
+      const response = await axios.post(
+        `${API_BASE_URL}/documents/delete/request/${docId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      setOtpAction("delete");
+      setPendingDocId(docId);
+      setPendingDocName(docName);
+      setOtpInput(response.data.otp_code || "");
+      setShowOtpPassword(false);
+      setShowOtpModal(true);
     } catch {
-      addToast("Failed to delete document", "error");
+      addToast("Failed to request delete OTP", "error");
     }
   };
 
-  const handleRequestDownload = async (docId: string) => {
+  const handleRequestDownload = async (docId: string, docName: string) => {
     try {
       const token = getToken();
       const response = await axios.post(
@@ -179,7 +197,9 @@ export default function DashboardPage() {
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
+      setOtpAction("download");
       setPendingDocId(docId);
+      setPendingDocName(docName);
       setOtpInput("");
       setShowOtpPassword(false);
 
@@ -216,12 +236,27 @@ export default function DashboardPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      setShowOtpModal(false);
-      setOtpInput("");
-      setPendingDocId("");
+      resetOtpModal();
       addToast("Document downloaded successfully", "success");
     } catch (err) {
       addToast("Failed to download document", "error");
+    }
+  };
+
+  const handleVerifyAndDelete = async (docId: string, otp: string) => {
+    try {
+      const token = getToken();
+      await axios.post(
+        `${API_BASE_URL}/documents/delete/verify/${docId}`,
+        { otp_code: otp },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      resetOtpModal();
+      addToast(`"${pendingDocName}" deleted successfully`, "success");
+      await loadDocuments();
+    } catch {
+      addToast("Failed to delete document", "error");
     }
   };
 
@@ -416,7 +451,9 @@ export default function DashboardPage() {
                   {/* Actions */}
                   <div className="flex gap-2 sm:gap-3">
                     <button
-                      onClick={() => handleRequestDownload(doc.id)}
+                      onClick={() =>
+                        handleRequestDownload(doc.id, doc.original_filename)
+                      }
                       className="flex items-center gap-2 px-4 py-2.5 rounded-lg
                                bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600
                                text-white font-medium text-sm
@@ -459,12 +496,14 @@ export default function DashboardPage() {
                 <Lock className="w-6 h-6 text-indigo-400" />
               </div>
               <h2 className="text-2xl font-bold text-white text-center mb-2">
-                Verify Download
+                {otpAction === "download" ? "Verify Download" : "Verify Delete"}
               </h2>
               <p className="text-center text-gray-400">
                 {otpInput
                   ? "DEBUG MODE: OTP is pre-filled below"
-                  : "Enter the 6-digit code sent to your email"}
+                  : otpAction === "download"
+                    ? "Enter the 6-digit code sent to your email"
+                    : "Enter the 6-digit code to confirm permanent delete"}
               </p>
             </div>
 
@@ -507,18 +546,18 @@ export default function DashboardPage() {
             {/* Buttons */}
             <div className="flex gap-3">
               <button
-                onClick={() => {
-                  setShowOtpModal(false);
-                  setOtpInput("");
-                  setPendingDocId("");
-                }}
+                onClick={resetOtpModal}
                 className="flex-1 px-4 py-3 bg-gray-800/50 hover:bg-gray-700/50 border border-gray-700
                          text-gray-300 font-medium rounded-lg transition-all duration-300"
               >
                 Cancel
               </button>
               <button
-                onClick={() => handleVerifyAndDownload(pendingDocId, otpInput)}
+                onClick={() =>
+                  otpAction === "download"
+                    ? handleVerifyAndDownload(pendingDocId, otpInput)
+                    : handleVerifyAndDelete(pendingDocId, otpInput)
+                }
                 disabled={otpInput.length !== 6}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700
                          hover:from-indigo-500 hover:to-indigo-600 text-white font-medium
@@ -527,7 +566,13 @@ export default function DashboardPage() {
                          flex items-center justify-center gap-2"
               >
                 {otpInput.length === 6 && <CheckCircle className="w-4 h-4" />}
-                <span>{otpInput.length === 6 ? "Download" : "Enter OTP"}</span>
+                <span>
+                  {otpInput.length === 6
+                    ? otpAction === "download"
+                      ? "Download"
+                      : "Delete"
+                    : "Enter OTP"}
+                </span>
               </button>
             </div>
           </div>

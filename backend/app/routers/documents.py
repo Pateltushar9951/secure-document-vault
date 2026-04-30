@@ -118,27 +118,56 @@ def list_documents(
     ]
 
 
-# ── Delete ────────────────────────────────────────────────────
-@router.delete(
-    "/{doc_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a document from the vault",
+# ── Request Delete (send OTP) ─────────────────────────────────
+@router.post(
+    "/delete/request/{doc_id}",
+    response_model=OTPRequestResponse,
+    summary="Request a delete — triggers OTP generation and email",
 )
-def delete_document(
+def request_delete(
     doc_id: str,
     current_user: User = Depends(get_current_user),
 ):
     """
-    Permanently delete a document and its encrypted file.
+    Initiate a secure delete operation.
     """
     doc = _get_document_or_404(doc_id, str(current_user.id))
 
-    file_path = settings.storage_path / doc.stored_filename
-    if file_path.exists():
-        file_path.unlink()
-        logger.info("Deleted encrypted file: %s", doc.stored_filename)
+    otp_code = generate_otp(
+        user_id=str(current_user.id),
+        document_id=str(doc.id),
+        purpose="delete",
+    )
 
-    doc.delete()
+    email_sent = send_otp_email(
+        recipient_email=current_user.email,
+        otp_code=otp_code,
+        filename=doc.original_filename,
+        action="delete",
+    )
+
+    expose_otp = settings.DEBUG and not email_sent
+    logger.info(
+        "Delete requested for doc %s by user %s — email_sent=%s",
+        doc_id,
+        current_user.email,
+        email_sent,
+    )
+
+    return OTPRequestResponse(
+        message=(
+            "OTP sent to your email. Submit it within "
+            f"{settings.OTP_EXPIRE_MINUTES} minutes to confirm delete."
+            if email_sent
+            else (
+                f"[DEBUG] Email not configured. OTP returned in this response. "
+                f"Expires in {settings.OTP_EXPIRE_MINUTES} minutes."
+            )
+        ),
+        document_id=str(doc.id),
+        expires_in_minutes=settings.OTP_EXPIRE_MINUTES,
+        otp_code=otp_code if expose_otp else None,
+    )
 
 
 # ── Request Download (send OTP) ───────────────────────────────
@@ -159,12 +188,14 @@ def request_download(
     otp_code = generate_otp(
         user_id=str(current_user.id),
         document_id=str(doc.id),
+        purpose="download",
     )
 
     email_sent = send_otp_email(
         recipient_email=current_user.email,
         otp_code=otp_code,
         filename=doc.original_filename,
+        action="download",
     )
 
     expose_otp = settings.DEBUG and not email_sent
@@ -213,6 +244,7 @@ def verify_and_download(
         user_id=str(current_user.id),
         document_id=str(doc.id),
         otp_code=payload.otp_code,
+        purpose="download",
     )
 
     file_path = settings.storage_path / doc.stored_filename
@@ -239,3 +271,40 @@ def verify_and_download(
             "Content-Length": str(len(decrypted_bytes)),
         },
     )
+
+
+# ── Verify OTP → Delete file ─────────────────────────────────
+@router.post(
+    "/delete/verify/{doc_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Submit OTP to permanently delete the document",
+    responses={
+        204: {"description": "Document deleted"},
+        400: {"description": "Invalid or expired OTP"},
+        404: {"description": "Document not found"},
+    },
+)
+def verify_and_delete(
+    doc_id: str,
+    payload: OTPVerifyRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Complete the secure delete flow with OTP verification.
+    """
+    doc = _get_document_or_404(doc_id, str(current_user.id))
+
+    verify_otp(
+        user_id=str(current_user.id),
+        document_id=str(doc.id),
+        otp_code=payload.otp_code,
+        purpose="delete",
+    )
+
+    file_path = settings.storage_path / doc.stored_filename
+    if file_path.exists():
+        file_path.unlink()
+        logger.info("Deleted encrypted file: %s", doc.stored_filename)
+
+    doc.delete()
+    logger.info("Delete completed: doc=%s user=%s", doc_id, current_user.email)

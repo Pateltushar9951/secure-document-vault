@@ -28,7 +28,7 @@ def _generate_numeric_otp(length: int) -> str:
     return str(secrets.randbelow(upper)).zfill(length)
 
 
-def generate_otp(user_id: str, document_id: str) -> str:
+def generate_otp(user_id: str, document_id: str, purpose: str = "download") -> str:
     """
     Generate a new OTP for (user, document), persist a hashed copy,
     and return the plaintext OTP for delivery.
@@ -37,6 +37,7 @@ def generate_otp(user_id: str, document_id: str) -> str:
     OTP.objects(
         user_id=user_id,
         document_id=document_id,
+        purpose=purpose,
         is_used=False,
     ).delete()
 
@@ -47,6 +48,7 @@ def generate_otp(user_id: str, document_id: str) -> str:
     otp_record = OTP(
         user_id=user_id,
         document_id=document_id,
+        purpose=purpose,
         otp_hash=otp_hash,
         expires_at=expires_at,
     )
@@ -63,7 +65,12 @@ def generate_otp(user_id: str, document_id: str) -> str:
     return plaintext
 
 
-def verify_otp(user_id: str, document_id: str, otp_code: str) -> None:
+def verify_otp(
+    user_id: str,
+    document_id: str,
+    otp_code: str,
+    purpose: str = "download",
+) -> None:
     """
     Verify the submitted OTP for MongoDB.
     """
@@ -71,6 +78,7 @@ def verify_otp(user_id: str, document_id: str, otp_code: str) -> None:
         record = OTP.objects(
             user_id=user_id,
             document_id=document_id,
+            purpose=purpose,
             is_used=False,
         ).order_by('-created_at').first()
     except OTP.DoesNotExist:

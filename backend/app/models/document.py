@@ -43,6 +43,7 @@ class OTP(Document):
     
     user_id = StringField(required=True, index=True)
     document_id = StringField(required=True)
+    purpose = StringField(required=True, default="download")
     otp_hash = StringField(required=True)
     expires_at = DateTimeField(required=True)
     is_used = BooleanField(default=False)
@@ -50,7 +51,7 @@ class OTP(Document):
 
     meta = {
         'collection': 'otps',
-        'indexes': ['user_id', 'document_id', 'created_at'],
+        'indexes': ['user_id', 'document_id', 'purpose', 'created_at'],
     }
 
     def to_dict(self):
