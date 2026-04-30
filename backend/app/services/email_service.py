@@ -131,6 +131,14 @@ def send_otp_email(
         )
         return False
 
+    from_address = settings.EMAIL_FROM or settings.SMTP_USERNAME
+    if not from_address:
+        logger.error(
+            "[EMAIL] SMTP is configured but no sender address is set for %s",
+            recipient_email,
+        )
+        return False
+
     subject = "Your Secure Document Vault OTP"
     html_body = _HTML_TEMPLATE.format(
         filename=filename,
@@ -144,7 +152,7 @@ def send_otp_email(
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = settings.EMAIL_FROM
+    msg["From"] = from_address
     msg["To"] = recipient_email
     msg.attach(MIMEText(plain_body, "plain"))
     msg.attach(MIMEText(html_body, "html"))
@@ -154,7 +162,7 @@ def send_otp_email(
             server.ehlo()
             server.starttls()
             server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
-            server.sendmail(settings.EMAIL_FROM, recipient_email, msg.as_string())
+            server.sendmail(from_address, recipient_email, msg.as_string())
         logger.info("📧 OTP email sent to %s", recipient_email)
         return True
     except Exception as exc:
@@ -176,6 +184,14 @@ def send_verification_email(
         )
         return False
 
+    from_address = settings.EMAIL_FROM or settings.SMTP_USERNAME
+    if not from_address:
+        logger.error(
+            "[EMAIL] SMTP is configured but no sender address is set for %s",
+            recipient_email,
+        )
+        return False
+
     subject = "Verify your Secure Document Vault email"
     html_body = _VERIFICATION_HTML_TEMPLATE.format(
         email=recipient_email,
@@ -190,7 +206,7 @@ def send_verification_email(
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = settings.EMAIL_FROM
+    msg["From"] = from_address
     msg["To"] = recipient_email
     msg.attach(MIMEText(plain_body, "plain"))
     msg.attach(MIMEText(html_body, "html"))
@@ -200,7 +216,7 @@ def send_verification_email(
             server.ehlo()
             server.starttls()
             server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
-            server.sendmail(settings.EMAIL_FROM, recipient_email, msg.as_string())
+            server.sendmail(from_address, recipient_email, msg.as_string())
         logger.info("📧 Verification email sent to %s", recipient_email)
         return True
     except Exception as exc:
