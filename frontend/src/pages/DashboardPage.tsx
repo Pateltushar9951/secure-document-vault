@@ -15,7 +15,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { API_BASE_URL } from "../config.ts";
+import { API_BASE_URL } from "../config";
 
 interface Document {
   id: string;
