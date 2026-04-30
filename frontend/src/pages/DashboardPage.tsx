@@ -183,8 +183,11 @@ export default function DashboardPage() {
       setOtpInput(response.data.otp_code || "");
       setShowOtpPassword(false);
       setShowOtpModal(true);
-    } catch {
-      addToast("Failed to request delete OTP", "error");
+    } catch (err: any) {
+      addToast(
+        err.response?.data?.detail || "Failed to request delete OTP",
+        "error",
+      );
     }
   };
 
@@ -209,8 +212,11 @@ export default function DashboardPage() {
       }
 
       setShowOtpModal(true);
-    } catch (err) {
-      addToast("Failed to request download", "error");
+    } catch (err: any) {
+      addToast(
+        err.response?.data?.detail || "Failed to request download",
+        "error",
+      );
     }
   };
 
@@ -238,8 +244,11 @@ export default function DashboardPage() {
 
       resetOtpModal();
       addToast("Document downloaded successfully", "success");
-    } catch (err) {
-      addToast("Failed to download document", "error");
+    } catch (err: any) {
+      addToast(
+        err.response?.data?.detail || "Failed to download document",
+        "error",
+      );
     }
   };
 
@@ -255,8 +264,11 @@ export default function DashboardPage() {
       resetOtpModal();
       addToast(`"${pendingDocName}" deleted successfully`, "success");
       await loadDocuments();
-    } catch {
-      addToast("Failed to delete document", "error");
+    } catch (err: any) {
+      addToast(
+        err.response?.data?.detail || "Failed to delete document",
+        "error",
+      );
     }
   };
 
